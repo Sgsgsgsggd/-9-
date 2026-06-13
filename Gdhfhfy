@@ -1,0 +1,90 @@
+
+
+-- [[ TOUCH FLING WITH TOGGLE BUTTON ]] --
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
+
+local IsFlinging = false
+
+-- === СОЗДАНИЕ GUI ===
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FlingGui"
+
+-- Пытаемся поместить в CoreGui, чтобы GUI не удалялся при смерти
+
+pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if ScreenGui.Parent ~= CoreGui then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0, 150, 0, 50)
+ToggleButton.Position = UDim2.new(0, 50, 0.5, 0) -- Половина экрана слева
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+ToggleButton.Text = "FLING: OFF"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.TextSize = 20
+ToggleButton.Parent = ScreenGui
+
+-- Скругление углов
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = ToggleButton
+
+-- === ЛОГИКА FLING ===
+
+local function setupFling(character)
+    local hrp = character:WaitForChild("HumanoidRootPart")
+    
+    -- Создаем силы для физического взрыва
+    local attachment = Instance.new("Attachment")
+    attachment.Parent = hrp
+
+    local velocity = Instance.new("LinearVelocity")
+    velocity.MaxForce = math.huge
+    velocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+    velocity.Attachment0 = attachment
+    velocity.Parent = hrp
+
+    -- Цикл обновления физики
+    RunService.Stepped:Connect(function()
+        if IsFlinging and character and hrp then
+            hrp.RotVelocity = Vector3.new(math.huge, math.huge, math.huge)
+            velocity.VectorVelocity = Vector3.new(math.huge, math.huge, math.huge)
+        else
+            hrp.RotVelocity = Vector3.new(0, 0, 0)
+            velocity.VectorVelocity = Vector3.new(0, 0, 0)
+        end
+    end)
+end
+
+-- Переключение состояния
+
+ToggleButton.MouseButton1Click:Connect(function()
+    IsFlinging = not IsFlinging
+    
+    if IsFlinging then
+        ToggleButton.Text = "FLING: ON"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+    else
+        ToggleButton.Text = "FLING: OFF"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    end
+end)
+
+-- Инициализация при спавне
+
+LocalPlayer.CharacterAdded:Connect(setupFling)
+if LocalPlayer.Character then
+    setupFling(LocalPlayer.Character)
+end
+
+print("Fling Script with GUI Loaded!")
